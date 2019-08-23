@@ -1,0 +1,107 @@
+#!/usr/bin/env python
+
+# ------------------------------------------------------------------------
+#
+#  chirp-audio-write: Writes a chirp payload to an audio file.
+#
+#  This file is part of the Chirp Connect Python SDK.
+#  For full information on usage and licensing, see https://chirp.io/
+#
+#  Copyright (c) 2011-2018, Asio Ltd.
+#  All rights reserved.
+#
+# ------------------------------------------------------------------------
+
+import array as ar
+import argparse
+import os
+import sys
+import wave
+
+from chirpsdk import (
+    ChirpConnect,
+    CHIRP_CONNECT_STATE_SENDING,
+    CHIRP_SDK_BUFFER_SIZE
+)
+
+
+def main(args):
+    # ------------------------------------------------------------------------
+    # Initialise the Connect SDK.
+    # ------------------------------------------------------------------------
+    sdk = ChirpConnect(block=args.config) if args.config else ChirpConnect()
+    print(str(sdk))
+    if args.network_config:
+        sdk.set_config_from_network()
+
+    print('Protocol: {protocol} [v{version}]'.format(
+        protocol=sdk.protocol_name,
+        version=sdk.protocol_version))
+
+    # ------------------------------------------------------------------------
+    # Disable audio playback.
+    # ------------------------------------------------------------------------
+    sdk.audio = None
+    sdk.start(send=True, receive=False)
+
+    # ------------------------------------------------------------------------
+    # Encode payload
+    # ------------------------------------------------------------------------
+    if args.unicode:
+        message = args.unicode.encode('utf-8')
+        payload = sdk.new_payload(message)
+    elif args.hex:
+        message = bytearray.fromhex(args.hex)
+        payload = sdk.new_payload(message)
+    else:
+        payload = sdk.random_payload()
+
+    # ------------------------------------------------------------------------
+    # Set transmission channel
+    # ------------------------------------------------------------------------
+    if args.channel:
+        if args.channel >= sdk.channel_count:
+            raise ValueError('Channel %d is not available' % args.channel)
+        sdk.transmission_channel = args.channel
+
+    # ------------------------------------------------------------------------
+    # Process output
+    # ------------------------------------------------------------------------
+    output_file = args.outfile if args.outfile else '%s.wav' % payload
+    w = wave.open(output_file, 'w')
+    w.setnchannels(1)
+    w.setsampwidth(2)
+    w.setframerate(sdk.output_sample_rate)
+
+    sdk.send(payload)
+
+    while sdk.state == CHIRP_CONNECT_STATE_SENDING:
+        data = ar.array('h', [0] * CHIRP_SDK_BUFFER_SIZE)
+        byte_data = bytearray(data.tobytes() if sys.version[0] == '3' else
+                              data.tostring())
+        sdk.process_shorts_output(byte_data)
+        w.writeframes(byte_data)
+
+    print('Wrote audio to output: %s' % output_file)
+    w.close()
+
+    sdk.stop()
+
+
+if __name__ == '__main__':
+    # ------------------------------------------------------------------------
+    # Parse command-line arguments.
+    # ------------------------------------------------------------------------
+    parser = argparse.ArgumentParser(
+        description='Chirp Connect Audio Writer',
+        epilog='Generates a .wav file containing a Chirp payload, either user-specified or random payload'
+    )
+    parser.add_argument('outfile', help='Output filename to write .wav data to')
+    parser.add_argument('-u', '--unicode', type=str, help='Unicode string used to generate payload')
+    parser.add_argument('-x', '--hex', type=str, help='Hex string used to generate payload')
+    parser.add_argument('-c', '--channel', type=int, help='The channel to output data on')
+    parser.add_argument('--config', type=str, help='Select a config block from your chirprc file')
+    parser.add_argument('--network-config', action='store_true', help='Optionally download a config from the network')
+    args = parser.parse_args()
+
+    main(args)

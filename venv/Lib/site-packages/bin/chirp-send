@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+
+# ------------------------------------------------------------------------
+#
+#  chirp-send: Play chirps via the system's default audio output.
+#
+#  This file is part of the Chirp Python SDK.
+#  For full information on usage and licensing, see https://chirp.io/
+#
+#  Copyright (c) 2011-2018, Asio Ltd.
+#  All rights reserved.
+#
+# ------------------------------------------------------------------------
+
+import argparse
+import os
+import time
+
+from chirpsdk import ChirpConnect, CHIRP_CONNECT_STATE_RUNNING
+
+
+def main(args):
+    # ------------------------------------------------------------------------
+    # Initialise the Connect SDK.
+    # ------------------------------------------------------------------------
+    sdk = ChirpConnect(block=args.config) if args.config else ChirpConnect()
+    print(sdk.audio.query_devices())
+    print(str(sdk))
+    sdk.audio.output_device = args.o
+    if args.network_config:
+        sdk.set_config_from_network()
+
+    print('Protocol: {protocol} [v{version}]'.format(
+        protocol=sdk.protocol_name,
+        version=sdk.protocol_version))
+
+    # ------------------------------------------------------------------------
+    # Set transmission channel
+    # ------------------------------------------------------------------------
+    if args.channel:
+        if args.channel >= sdk.channel_count:
+            raise ValueError('Channel %d is not available' % args.channel)
+        sdk.transmission_channel = args.channel
+
+    # ------------------------------------------------------------------------
+    # Generate random payload and send.
+    # ------------------------------------------------------------------------
+    if args.unicode:
+        message = args.unicode.encode('utf-8')
+        payload = sdk.new_payload(message)
+    elif args.hex:
+        message = bytearray.fromhex(args.hex)
+        payload = sdk.new_payload(message)
+    else:
+        payload = sdk.random_payload()
+
+    sdk.volume = args.volume
+    sdk.start(send=True, receive=False)
+    sdk.send(payload, blocking=True)
+
+    sdk.stop()
+
+
+if __name__ == '__main__':
+    # ------------------------------------------------------------------------
+    # Parse command-line arguments.
+    # ------------------------------------------------------------------------
+    parser = argparse.ArgumentParser(
+        description='Chirp Connect Sender',
+        epilog="Play chirps via the system's default audio output"
+    )
+    parser.add_argument('-v', '--volume', help='Volume', default=1.0)
+    parser.add_argument('-u', '--unicode', type=str, help='Unicode string used to generate payload')
+    parser.add_argument('-x', '--hex', type=str, help='Hex string used to generate payload')
+    parser.add_argument('-c', '--channel', type=int, help='The channel to send data on (optional)')
+    parser.add_argument('-o', type=int, default=None, help='Output device index (optional)')
+    parser.add_argument('--config', type=str, help='Select a config block from your chirprc file')
+    parser.add_argument('--network-config', action='store_true', help='Optionally download a config from the network')
+    args = parser.parse_args()
+
+    main(args)

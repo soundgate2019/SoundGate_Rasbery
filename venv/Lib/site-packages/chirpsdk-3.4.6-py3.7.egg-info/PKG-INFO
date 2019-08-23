@@ -1,0 +1,23 @@
+Metadata-Version: 1.1
+Name: chirpsdk
+Version: 3.4.6
+Summary: Chirp Python SDK
+Home-page: https://developers.chirp.io
+Author: Asio Ltd.
+Author-email: developers@chirp.io
+License: License :: Other/Proprietary License
+Description: The Chirp Python SDK enables the user to send and receive data using the device's microphone and speaker.
+Keywords: sound,networking,chirp
+Platform: UNKNOWN
+Classifier: Topic :: Multimedia :: Sound/Audio
+Classifier: Topic :: Communications
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7

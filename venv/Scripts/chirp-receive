@@ -1,0 +1,94 @@
+#!c:\users\victo\pycharmprojects\soundgate\venv\scripts\python.exe
+
+#---------------------------------------------------------------------------
+#
+#  chirp-receive: Listens for chirps via the system's default audio input.
+#
+#  This file is part of the Chirp Python SDK.
+#  For full information on usage and licensing, see https://chirp.io/
+#
+#  Copyright (c) 2011-2018, Asio Ltd.
+#  All rights reserved.
+#
+#---------------------------------------------------------------------------
+
+import argparse
+import os
+import time
+import sys
+
+from chirpsdk import ChirpConnect, CallbackSet
+
+
+class Callbacks(CallbackSet):
+    def __init__(self, args=None):
+        self.args = args
+
+    def on_receiving(self, channel):
+        print('Receiving data [ch{ch}]'.format(ch=channel))
+
+    def on_received(self, payload, channel):
+        if payload is None:
+            print('Decode failed!')
+        else:
+            if self.args.unicode:
+                print('Received: {data} [ch{ch}]'.format(
+                    data=payload.decode('utf-8'), ch=channel))
+            elif self.args.hex:
+                print('Received: {data} [ch{ch}]'.format(
+                    data=str(payload), ch=channel))
+            else:
+                print('Received: {data} [ch{ch}]'.format(
+                    data=list(payload), ch=channel))
+
+
+def main(args):
+    # ------------------------------------------------------------------------
+    # Initialise the Connect SDK.
+    # ------------------------------------------------------------------------
+    sdk = ChirpConnect(block=args.config) if args.config else ChirpConnect()
+    print(sdk.audio.query_devices())
+    print(str(sdk))
+    sdk.audio.input_device = args.i
+    if args.network_config:
+        sdk.set_config_from_network()
+
+    print('Protocol: {protocol} [v{version}]'.format(
+        protocol=sdk.protocol_name,
+        version=sdk.protocol_version))
+
+    # ------------------------------------------------------------------------
+    # Set callbacks and start SDK
+    # ------------------------------------------------------------------------
+    sdk.set_callbacks(Callbacks(args))
+    sdk.start(send=False, receive=True)
+
+    try:
+        # ------------------------------------------------------------------------
+        # Process audio streams
+        # ------------------------------------------------------------------------
+        while True:
+            time.sleep(0.1)
+
+    except KeyboardInterrupt:
+        print('Exiting')
+
+    sdk.stop()
+
+
+if __name__ == '__main__':
+    # ------------------------------------------------------------------------
+    # Parse command-line arguments.
+    # ------------------------------------------------------------------------
+    parser = argparse.ArgumentParser(
+        description='Chirp Connect Listener',
+        epilog='Listens for Chirp signals on the default system input'
+    )
+    parser.add_argument('-u', '--unicode', action='store_true', help='Parse payloads as unicode')
+    parser.add_argument('-x', '--hex', action='store_true', help='Parse payloads as hexstrings')
+    parser.add_argument('-i', type=int, default=None, help='Input device index (optional)')
+    parser.add_argument('--config', type=str, help='Select a config block from your chirprc file')
+    parser.add_argument('--network-config', action='store_true', help='Optionally download a config from the network')
+    args = parser.parse_args()
+
+    main(args)
