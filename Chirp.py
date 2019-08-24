@@ -8,6 +8,7 @@ recebido = False
 chirp.audio.wav_filename = 'C:\\debug\\teste.wav'
 print(chirpsdk.CHIRP_CONNECT_STATE_NOT_CREATED)
 
+
 class Callbacks(CallbackSet):
     def on_sent(self, payload, channel):
         print(f"mandei : {payload}")
