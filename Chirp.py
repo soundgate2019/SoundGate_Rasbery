@@ -1,12 +1,9 @@
 from chirpsdk import ChirpConnect, CallbackSet
 import chirpsdk
+import Consumo
 import sys
 import time
-chirp = ChirpConnect(debug=True, key="544c4dC370CEAf0df0d4C23E6", secret="BAa70CdaaAA5e9E43A46bfF1D99Ae5DEB0c0Aa4b36dfDB9fD0",
-                     config="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")
 recebido = False
-chirp.audio.wav_filename = 'C:\\debug\\teste.wav'
-print(chirpsdk.CHIRP_CONNECT_STATE_NOT_CREATED)
 
 
 class Callbacks(CallbackSet):
@@ -23,7 +20,7 @@ class Callbacks(CallbackSet):
         if payload is not None:
             global recebido
             identifier = payload.decode('utf-8')
-            print('Received: ' + identifier)
+            Consumo.checar_passagem(identifier)
             recebido = True
         else:
             print('Decode failed')
@@ -32,19 +29,23 @@ class Callbacks(CallbackSet):
         print(old, new)
 
 
-#chirp.input_sample_rate = 32000
-chirp.set_callbacks(Callbacks())
-chirp.start()
-mensagem = 'hello'
-dados = bytearray([ord(ch) for ch in mensagem])
+def main():
+    chirp = ChirpConnect(debug=True, key="0cDCbED05BdFEACad7A9AeFBD",
+                         secret="14f10FE0c6dD2c9B14DC3a739EAE42AF5E363BD339CfCDEb3B", config="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");
+    chirp.audio.wav_filename = 'C:\\debug\\teste.wav'
+    # chirp.input_sample_rate = 32000
+    chirp.set_callbacks(Callbacks())
+    chirp.start()
+    mensagem = 'hello'
+    dados = bytearray([ord(ch) for ch in mensagem])
+    #chirp.send(dados)
 
+
+main()
 termino = time.time()+20
-try:
-    while not recebido and time.time() < termino:
+while not recebido and time.time() < termino:
         time.sleep(0.1)
         sys.stdout.write('.')
         sys.stdout.flush()
-except KeyboardInterrupt:
-        print('Exiting')
 
-chirp.stop()
+
